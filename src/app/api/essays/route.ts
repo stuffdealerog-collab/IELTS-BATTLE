@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
+import { getSession } from '@/lib/jwt'
 import { prisma } from '@/lib/prisma'
 
 export async function GET() {
-  const session = await auth()
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const essays = await prisma.essay.findMany({
-    where: { userId: session.user.id, isDraft: false },
+    where: { userId: session.userId, isDraft: false },
     include: { topic: true, feedback: true },
     orderBy: { submittedAt: 'desc' },
   })
@@ -16,7 +16,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await auth()
+  const session = await getSession()
   const { topicId, content, wordCount, isDraft, timeTaken } = await req.json()
 
   if (!topicId || !content) {
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
 
   const essay = await prisma.essay.create({
     data: {
-      userId: session?.user?.id ?? null,
+      userId: session?.userId ?? null,
       topicId,
       content,
       wordCount: wordCount ?? 0,

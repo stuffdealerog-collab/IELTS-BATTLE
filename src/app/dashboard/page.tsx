@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { auth } from '@/lib/auth'
+import { getSession } from '@/lib/jwt'
 import { prisma } from '@/lib/prisma'
 import { ScoreTrendChart } from '@/components/dashboard/ScoreTrendChart'
 import { EssayHistoryTable } from '@/components/dashboard/EssayHistoryTable'
@@ -11,11 +11,11 @@ import { CRITERIA_LABELS } from '@/lib/constants'
 import { BookOpen, TrendingUp, Target, AlertCircle } from 'lucide-react'
 
 export default async function DashboardPage() {
-  const session = await auth()
-  if (!session?.user?.id) redirect('/login')
+  const session = await getSession()
+  if (!session) redirect('/')
 
   const essays = await prisma.essay.findMany({
-    where: { userId: session.user.id, isDraft: false },
+    where: { userId: session.userId, isDraft: false },
     include: { topic: true, feedback: true },
     orderBy: { submittedAt: 'desc' },
   })

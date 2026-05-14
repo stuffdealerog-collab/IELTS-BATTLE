@@ -1,25 +1,28 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/layout/Providers'
-import { Navbar } from '@/components/layout/Navbar'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'IELTS Battle — Write Smarter, Score Higher',
-  description:
-    'Practice IELTS Writing Tasks 1 & 2 with real exam questions and instant AI feedback on all four band criteria.',
+  title: 'IELTS Battle',
+  description: 'Compete in real-time IELTS Writing battles or learn with an AI Tutor',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#2563eb',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className={`${inter.className} min-h-full`}>
-        <Providers>
-          <Navbar />
-          <main>{children}</main>
-        </Providers>
+    <html lang="en">
+      <body className={`${inter.className} tma-body`}>
+        <Providers>{children}</Providers>
       </body>
     </html>
   )

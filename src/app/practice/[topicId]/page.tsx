@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { auth } from '@/lib/auth'
+import { getSession } from '@/lib/jwt'
 import { WritingEditor } from '@/components/editor/WritingEditor'
 import { EssayTopic } from '@/types'
 
@@ -10,15 +10,14 @@ interface PageProps {
 
 export default async function PracticeTopicPage({ params }: PageProps) {
   const { topicId } = await params
-  const session = await auth()
+  const session = await getSession()
 
   const topic = await prisma.essayTopic.findUnique({ where: { id: topicId } })
   if (!topic) notFound()
 
-  // Create draft essay
   const essay = await prisma.essay.create({
     data: {
-      userId: session?.user?.id ?? null,
+      userId: session?.userId ?? null,
       topicId: topic.id,
       isDraft: true,
     },

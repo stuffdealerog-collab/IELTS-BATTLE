@@ -1,163 +1,164 @@
+'use client'
+
 import Link from 'next/link'
-import { prisma } from '@/lib/prisma'
-import { Button } from '@/components/ui/button'
+import { useTMA } from '@/components/tma/TMAProvider'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { BookOpen, Sparkles, Timer, BarChart3, Target, CheckCircle2 } from 'lucide-react'
+import { Swords, GraduationCap, PenLine, Trophy, Loader2, Crown, Zap } from 'lucide-react'
 
-export default async function HomePage() {
-  const [task1Count, task2Count] = await Promise.all([
-    prisma.essayTopic.count({ where: { taskType: 'TASK1' } }),
-    prisma.essayTopic.count({ where: { taskType: 'TASK2' } }),
-  ])
+export default function HomePage() {
+  const { user, isLoading, isInTelegram } = useTMA()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 p-8">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <p className="text-sm text-muted-foreground">Loading IELTS Battle…</p>
+      </div>
+    )
+  }
+
+  if (!isInTelegram) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-8 text-center">
+        <div className="text-5xl">📱</div>
+        <h1 className="text-xl font-bold">Open in Telegram</h1>
+        <p className="text-sm text-muted-foreground max-w-xs">
+          IELTS Battle is a Telegram Mini App. Please open it inside Telegram to play.
+        </p>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 p-8">
+        <p className="text-sm text-muted-foreground">Signing in…</p>
+      </div>
+    )
+  }
+
+  const displayName = user.firstName ?? user.username ?? 'Player'
+  const winRate = user.wins + user.losses > 0
+    ? Math.round((user.wins / (user.wins + user.losses)) * 100)
+    : 0
 
   return (
-    <div className="min-h-[calc(100vh-64px)]">
-      {/* Hero */}
-      <section className="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-20 px-4">
-        <div className="max-w-4xl mx-auto text-center space-y-6">
-          <Badge className="bg-blue-100 text-blue-700 border-0 text-sm px-4 py-1">
-            AI-Powered IELTS Training
-          </Badge>
-          <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 leading-tight">
-            Write Smarter,
-            <br />
-            <span className="text-blue-600">Score Higher</span>
-          </h1>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Practice IELTS Writing with real exam questions and get instant AI feedback on all four
-            band criteria — just like a real examiner.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-            <Link href="/practice?taskType=TASK2&category=ALL">
-              <Button size="lg" className="gap-2 px-8">
-                <BookOpen className="w-5 h-5" />
-                Start Task 2 Practice
-              </Button>
-            </Link>
-            <Link href="/practice?taskType=TASK1&category=ALL">
-              <Button size="lg" variant="outline" className="gap-2 px-8">
-                <BarChart3 className="w-5 h-5" />
-                Task 1 Practice
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="py-12 px-4 bg-white border-y">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-          {[
-            { value: task1Count, label: 'Task 1 Topics' },
-            { value: task2Count, label: 'Task 2 Topics' },
-            { value: '4', label: 'IELTS Criteria' },
-            { value: '9', label: 'Band Levels' },
-          ].map(({ value, label }) => (
-            <div key={label}>
-              <div className="text-3xl font-bold text-blue-600">{value}</div>
-              <div className="text-sm text-slate-500 mt-1">{label}</div>
+    <div className="min-h-screen p-4 pb-8 space-y-4">
+      {/* User header */}
+      <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center gap-3">
+          {user.photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={user.photoUrl}
+              alt={displayName}
+              className="w-12 h-12 rounded-full border-2 border-primary/30"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+              {displayName.charAt(0).toUpperCase()}
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-16 px-4 bg-slate-50">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-2xl font-bold text-slate-800 text-center mb-10">
-            Everything you need to succeed
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                icon: <Target className="w-6 h-6 text-blue-500" />,
-                title: 'Real Exam Topics',
-                desc: `${task1Count + task2Count} authentic IELTS questions across all task types and categories, randomly selected.`,
-              },
-              {
-                icon: <Sparkles className="w-6 h-6 text-purple-500" />,
-                title: 'AI Writing Tips',
-                desc: 'Get 5 targeted tips for each specific question before you start writing, powered by Claude AI.',
-              },
-              {
-                icon: <Timer className="w-6 h-6 text-amber-500" />,
-                title: 'Exam Conditions',
-                desc: 'Built-in countdown timer (20 min / 40 min), word counter, and auto-save keep you exam-ready.',
-              },
-              {
-                icon: <CheckCircle2 className="w-6 h-6 text-green-500" />,
-                title: 'Instant AI Feedback',
-                desc: 'Receive band scores on all 4 IELTS criteria with specific improvement suggestions.',
-              },
-              {
-                icon: <BarChart3 className="w-6 h-6 text-red-500" />,
-                title: 'Progress Dashboard',
-                desc: 'Track your band score trends over time and identify your weakest criteria.',
-              },
-              {
-                icon: <BookOpen className="w-6 h-6 text-teal-500" />,
-                title: 'Vocabulary Bank',
-                desc: 'Automatically collect advanced vocabulary from AI feedback to build your word bank.',
-              },
-            ].map(({ icon, title, desc }) => (
-              <Card key={title} className="border-0 shadow-sm">
-                <CardContent className="pt-6 space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-                    {icon}
-                  </div>
-                  <h3 className="font-semibold text-slate-800">{title}</h3>
-                  <p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
-                </CardContent>
-              </Card>
-            ))}
+          )}
+          <div>
+            <p className="font-bold text-base leading-tight">{displayName}</p>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Crown className="w-3 h-3 text-amber-500" />
+              <span className="font-semibold">{user.rating}</span>
+              <span>·</span>
+              <span>{user.wins}W {user.losses}L</span>
+              {winRate > 0 && <span>· {winRate}%</span>}
+            </div>
           </div>
         </div>
-      </section>
+        <Link href="/leaderboard">
+          <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+            <Trophy className="w-5 h-5 text-amber-500" />
+          </div>
+        </Link>
+      </div>
 
-      {/* Task Cards CTA */}
-      <section className="py-16 px-4 bg-white">
-        <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <Card className="border-blue-200 bg-blue-50">
-            <CardContent className="pt-6 space-y-4">
-              <Badge className="bg-blue-100 text-blue-700 border-0">Academic &amp; General</Badge>
-              <h3 className="text-xl font-bold text-slate-800">Task 1 — Charts &amp; Diagrams</h3>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                Describe bar charts, line graphs, pie charts, tables, maps and processes. {task1Count} topics
-                across 7 visual types.
-              </p>
-              <Link href="/practice?taskType=TASK1&category=ALL">
-                <Button className="w-full gap-2">
-                  <BarChart3 className="w-4 h-4" />
-                  Practice Task 1
-                </Button>
-              </Link>
+      {/* Hero */}
+      <div className="rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 p-5 text-white">
+        <Zap className="w-6 h-6 mb-2 text-yellow-300" />
+        <h1 className="font-bold text-xl leading-tight">Master IELTS Writing</h1>
+        <p className="text-sm text-white/80 mt-1">
+          Battle friends, learn with AI, climb the leaderboard.
+        </p>
+      </div>
+
+      {/* Modes */}
+      <div className="space-y-3">
+        {/* Solo Mode */}
+        <Link href="/solo">
+          <Card className="hover:scale-[0.99] active:scale-[0.98] transition-transform cursor-pointer border-0 bg-card shadow-sm">
+            <CardContent className="flex items-center gap-4 p-4">
+              <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                <GraduationCap className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h3 className="font-semibold">Solo Mode</h3>
+                  <Badge className="bg-emerald-100 text-emerald-700 text-[10px] px-1.5 h-4 border-0">
+                    AI Tutor
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Learn step-by-step with a real-time AI writing coach
+                </p>
+              </div>
             </CardContent>
           </Card>
+        </Link>
 
-          <Card className="border-purple-200 bg-purple-50">
-            <CardContent className="pt-6 space-y-4">
-              <Badge className="bg-purple-100 text-purple-700 border-0">Essay Writing</Badge>
-              <h3 className="text-xl font-bold text-slate-800">Task 2 — Essays</h3>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                Opinion, Discussion, Problem/Solution, Advantages &amp; Disadvantages, and Two-Part questions.{' '}
-                {task2Count} real topics.
-              </p>
-              <Link href="/practice?taskType=TASK2&category=ALL">
-                <Button className="w-full gap-2 bg-purple-600 hover:bg-purple-700">
-                  <BookOpen className="w-4 h-4" />
-                  Practice Task 2
-                </Button>
-              </Link>
+        {/* Battle Mode */}
+        <Link href="/battle">
+          <Card className="hover:scale-[0.99] active:scale-[0.98] transition-transform cursor-pointer border-0 bg-card shadow-sm">
+            <CardContent className="flex items-center gap-4 p-4">
+              <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+                <Swords className="w-6 h-6 text-red-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h3 className="font-semibold">Battle Mode</h3>
+                  <Badge className="bg-red-100 text-red-700 text-[10px] px-1.5 h-4 border-0">
+                    Live
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Compete 1v1 — Quick / Part / Full IELTS battles
+                </p>
+              </div>
             </CardContent>
           </Card>
-        </div>
-      </section>
+        </Link>
 
-      {/* Footer */}
-      <footer className="py-6 px-4 border-t text-center text-sm text-slate-400">
-        IELTS Battle — AI-powered writing practice
-      </footer>
+        {/* Practice Mode */}
+        <Link href="/practice?taskType=ALL&category=ALL">
+          <Card className="hover:scale-[0.99] active:scale-[0.98] transition-transform cursor-pointer border-0 bg-card shadow-sm">
+            <CardContent className="flex items-center gap-4 p-4">
+              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                <PenLine className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h3 className="font-semibold">Free Practice</h3>
+                  <Badge variant="outline" className="text-[10px] px-1.5 h-4">
+                    Solo
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Write at your own pace, get AI feedback on all 4 IELTS criteria
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      <p className="text-center text-xs text-muted-foreground pt-2">
+        Master Writing Task 1 &amp; 2 with real exam topics
+      </p>
     </div>
   )
 }
