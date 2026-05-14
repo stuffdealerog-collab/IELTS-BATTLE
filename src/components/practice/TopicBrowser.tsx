@@ -1,12 +1,18 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { EssayTopic } from '@/types'
 import { TopicCard } from './TopicCard'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { TASK_CATEGORIES, CATEGORY_LABELS } from '@/lib/constants'
 import { Shuffle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -59,49 +65,71 @@ export function TopicBrowser({ topics, total, taskType, category }: TopicBrowser
       : [...TASK_CATEGORIES.TASK1, ...TASK_CATEGORIES.TASK2]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Random button — full width on mobile */}
+      <Button
+        onClick={handleRandom}
+        disabled={isRandom}
+        className="w-full gap-2 h-11 rounded-xl"
+        size="lg"
+      >
+        {isRandom ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Shuffle className="w-4 h-4" />
+        )}
+        Random Topic
+      </Button>
+
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="space-y-2">
         <Tabs value={taskType} onValueChange={handleTaskTypeChange}>
-          <TabsList>
-            <TabsTrigger value="ALL">All</TabsTrigger>
-            <TabsTrigger value="TASK1">Task 1</TabsTrigger>
-            <TabsTrigger value="TASK2">Task 2</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 h-10 rounded-xl bg-secondary p-1">
+            <TabsTrigger value="ALL" className="rounded-lg text-xs">
+              All
+            </TabsTrigger>
+            <TabsTrigger value="TASK1" className="rounded-lg text-xs">
+              Task 1
+            </TabsTrigger>
+            <TabsTrigger value="TASK2" className="rounded-lg text-xs">
+              Task 2
+            </TabsTrigger>
           </TabsList>
         </Tabs>
 
-        <Select value={category} onValueChange={handleCategoryChange}>
-          <SelectTrigger className="w-48 text-sm">
-            <SelectValue placeholder="All categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All categories</SelectItem>
-            {categories.map((cat) => (
-              <SelectItem key={cat} value={cat}>
-                {CATEGORY_LABELS[cat]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Button variant="outline" onClick={handleRandom} disabled={isRandom} className="gap-2">
-          {isRandom ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shuffle className="w-4 h-4" />}
-          Random Topic
-        </Button>
-
-        <span className="text-sm text-slate-400 ml-auto">{total} topics</span>
+        <div className="flex items-center gap-2">
+          <Select value={category} onValueChange={handleCategoryChange}>
+            <SelectTrigger className="flex-1 h-10 text-sm rounded-xl">
+              <SelectValue placeholder="All categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All categories</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat} value={cat}>
+                  {CATEGORY_LABELS[cat]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-xs text-muted-foreground shrink-0 px-1">
+            {total} {total === 1 ? 'topic' : 'topics'}
+          </span>
+        </div>
       </div>
 
       {/* Grid */}
       {topics.length === 0 ? (
-        <div className="text-center py-16 text-slate-400">
-          <p>No topics found for this filter.</p>
-          <Button variant="link" onClick={() => router.push('/practice?taskType=ALL&category=ALL')}>
+        <div className="text-center py-16 space-y-2">
+          <p className="text-sm text-muted-foreground">No topics match this filter.</p>
+          <Button
+            variant="link"
+            onClick={() => router.push('/practice?taskType=ALL&category=ALL')}
+          >
             Clear filters
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
           {topics.map((topic) => (
             <TopicCard key={topic.id} topic={topic} />
           ))}

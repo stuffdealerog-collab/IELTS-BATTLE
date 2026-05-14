@@ -57,20 +57,20 @@ export default async function DashboardPage() {
       : null
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
-          <p className="text-slate-500 text-sm mt-1">
+    <div className="mx-auto w-full max-w-4xl px-4 tma-safe-top pb-10 space-y-5">
+      <div className="flex items-center justify-between gap-3 pt-1">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl font-bold">Dashboard</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
             {submittedWithFeedback.length > 0
               ? `${submittedWithFeedback.length} essays submitted`
               : 'No essays yet — start practicing!'}
           </p>
         </div>
         <Link href="/practice">
-          <Button className="gap-2">
+          <Button size="sm" className="gap-1.5 h-10 rounded-xl">
             <BookOpen className="w-4 h-4" />
-            Practice Now
+            Practice
           </Button>
         </Link>
       </div>

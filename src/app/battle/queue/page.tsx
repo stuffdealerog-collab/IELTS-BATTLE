@@ -18,7 +18,7 @@ export default function BattleQueuePage() {
 
 function QueueLoading() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-[var(--tg-stable-h,100vh)] flex items-center justify-center">
       <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
     </div>
   )
@@ -78,7 +78,7 @@ function QueueInner() {
   const ss = String(seconds % 60).padStart(2, '0')
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 space-y-6">
+    <div className="min-h-[var(--tg-stable-h,100vh)] flex flex-col items-center justify-center p-6 space-y-6">
       <div className="relative">
         <div className="w-32 h-32 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
           <Swords className="w-14 h-14 text-primary" />

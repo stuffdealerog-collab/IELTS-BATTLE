@@ -27,6 +27,7 @@ export async function POST(req: Request) {
     prisma.lessonStep.findUnique({ where: { id: stepId } }),
     prisma.lessonProgress.findUnique({
       where: { userId_lessonId: { userId: session.userId, lessonId } },
+      include: { topic: true },
     }),
   ])
 
@@ -45,6 +46,9 @@ export async function POST(req: Request) {
     studentAttempt: attempt,
     evaluationCriteria: step.evaluationCriteria,
     attemptNumber,
+    topicTitle: progress?.topic?.title,
+    topicPrompt: progress?.topic?.prompt,
+    topicImageDescription: progress?.topic?.imageDescription ?? null,
   })
 
   let resultText = ''

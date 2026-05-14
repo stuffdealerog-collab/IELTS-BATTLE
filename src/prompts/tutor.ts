@@ -8,6 +8,9 @@ export interface TutorContext {
   instruction: string
   starter?: string | null
   essaySoFar: string
+  topicTitle?: string
+  topicPrompt?: string
+  topicImageDescription?: string | null
 }
 
 export function buildTutorIntroPrompt(ctx: TutorContext): string {
@@ -31,14 +34,23 @@ export interface TutorEvalContext extends TutorContext {
 }
 
 export function buildTutorEvaluatePrompt(ctx: TutorEvalContext): string {
+  const topicBlock = ctx.topicPrompt
+    ? `\nESSAY TOPIC (the prompt the student is responding to):\n"""\n${ctx.topicPrompt}\n"""\n${
+        ctx.topicImageDescription
+          ? `\nChart/Image description (Task 1 only):\n"""\n${ctx.topicImageDescription}\n"""\n`
+          : ''
+      }`
+    : ''
+
   return `You are an IELTS writing tutor evaluating a student's attempt at one part of an essay.
 
-Lesson: ${ctx.lessonTitle}
+Lesson: ${ctx.lessonTitle}${topicBlock}
 Step: ${ctx.stepTitle} (${ctx.stepOrder}/${ctx.totalSteps})
 Step's instruction was: ${ctx.instruction}
 
 What to check:
 ${ctx.evaluationCriteria}
+- Critically: does the student's writing actually address the ESSAY TOPIC above? Flag any off-topic answer.
 
 ${ctx.essaySoFar ? `Essay built so far:\n${ctx.essaySoFar}\n\n` : ''}Student's attempt for this step:
 """

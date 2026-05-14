@@ -73,9 +73,9 @@ export function WritingEditor({ topic, essayId, initialContent = '' }: WritingEd
   }, [isExpired])
 
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden">
+    <div className="flex h-[var(--tg-stable-h,100vh)] overflow-hidden">
       {/* Left Panel — Topic + Timer */}
-      <div className="w-64 shrink-0 border-r bg-slate-50 p-4 overflow-y-auto hidden lg:flex flex-col gap-4">
+      <div className="w-64 shrink-0 border-r bg-secondary/40 p-4 overflow-y-auto hidden lg:flex flex-col gap-4">
         <TopicDisplay topic={topic} />
         <div className="border-t pt-4">
           <CountdownTimer
@@ -112,20 +112,31 @@ export function WritingEditor({ topic, essayId, initialContent = '' }: WritingEd
 
       {/* Center — Editor */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile header */}
-        <div className="lg:hidden flex items-center justify-between p-3 border-b bg-white">
-          <div className="flex items-center gap-2">
-            <CountdownTimer
-              timeLeft={timeLeft}
-              totalTime={totalTime}
-              isRunning={isRunning}
-              isExpired={isExpired}
-            />
-            <Button size="sm" variant="ghost" onClick={isRunning ? pauseTimer : startTimer}>
-              {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-            </Button>
+        {/* Mobile header (with topic prompt) */}
+        <div className="lg:hidden border-b bg-card">
+          <div className="px-3 pt-2.5 pb-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+              {topic.taskType === 'TASK1' ? 'Task 1' : 'Task 2'} ·{' '}
+              {topic.category.replace(/_/g, ' ')}
+            </p>
+            <p className="text-xs font-medium leading-snug mt-0.5 line-clamp-3">
+              {topic.prompt}
+            </p>
           </div>
-          <WordCounter wordCount={wordCount} minWords={minWords} />
+          <div className="flex items-center justify-between gap-2 px-3 py-2 border-t">
+            <div className="flex items-center gap-2 min-w-0">
+              <CountdownTimer
+                timeLeft={timeLeft}
+                totalTime={totalTime}
+                isRunning={isRunning}
+                isExpired={isExpired}
+              />
+              <Button size="sm" variant="ghost" onClick={isRunning ? pauseTimer : startTimer}>
+                {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              </Button>
+            </div>
+            <WordCounter wordCount={wordCount} minWords={minWords} />
+          </div>
         </div>
 
         <Textarea
@@ -133,14 +144,17 @@ export function WritingEditor({ topic, essayId, initialContent = '' }: WritingEd
           onChange={(e) => setContent(e.target.value)}
           placeholder="Start writing your essay here..."
           className={cn(
-            'flex-1 resize-none rounded-none border-0 border-b focus-visible:ring-0',
-            'text-base leading-relaxed p-6 font-mono sm:font-sans',
-            'placeholder:text-slate-300'
+            'flex-1 resize-none rounded-none border-0 focus-visible:ring-0',
+            'text-base leading-relaxed p-4 sm:p-6',
+            'placeholder:text-muted-foreground/60'
           )}
         />
 
         {/* Bottom toolbar */}
-        <div className="flex items-center justify-between p-3 bg-white border-t gap-2 flex-wrap">
+        <div
+          className="flex items-center justify-between p-3 bg-card border-t gap-2 flex-wrap"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
+        >
           <div className="flex items-center gap-2">
             {/* Mobile tips sheet */}
             <Sheet>
@@ -180,7 +194,7 @@ export function WritingEditor({ topic, essayId, initialContent = '' }: WritingEd
       </div>
 
       {/* Right Panel — Tips (desktop) */}
-      <div className="w-72 shrink-0 border-l bg-slate-50 p-4 overflow-y-auto hidden lg:block">
+      <div className="w-72 shrink-0 border-l bg-secondary/40 p-4 overflow-y-auto hidden lg:block">
         <QuickTipsSidebar topicId={topic.id} />
       </div>
 

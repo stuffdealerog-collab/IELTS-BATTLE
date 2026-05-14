@@ -4,14 +4,14 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.75rem;
 
   /* Telegram-aware defaults (overridden by SDK bindings when in TMA) */
-  --tg-bg: var(--tg-theme-bg-color, oklch(1 0 0));
-  --tg-text: var(--tg-theme-text-color, oklch(0.145 0 0));
-  --tg-hint: var(--tg-theme-hint-color, oklch(0.556 0 0));
-  --tg-link: var(--tg-theme-link-color, oklch(0.5 0.18 264));
-  --tg-button: var(--tg-theme-button-color, oklch(0.5 0.18 264));
+  --tg-bg: var(--tg-theme-bg-color, oklch(0.99 0 0));
+  --tg-text: var(--tg-theme-text-color, oklch(0.15 0 0));
+  --tg-hint: var(--tg-theme-hint-color, oklch(0.55 0 0));
+  --tg-link: var(--tg-theme-link-color, oklch(0.52 0.2 264));
+  --tg-button: var(--tg-theme-button-color, oklch(0.55 0.2 264));
   --tg-button-text: var(--tg-theme-button-text-color, oklch(1 0 0));
   --tg-secondary-bg: var(--tg-theme-secondary-bg-color, oklch(0.97 0 0));
   --tg-section-bg: var(--tg-theme-section-bg-color, oklch(1 0 0));
@@ -20,6 +20,8 @@
   --tg-destructive: var(--tg-theme-destructive-text-color, oklch(0.6 0.22 22));
 
   --tg-stable-h: var(--tg-viewport-stable-height, 100vh);
+  --tg-content-safe-top: var(--tg-content-safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --tg-content-safe-bottom: var(--tg-content-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
 
   --background: var(--tg-bg);
   --foreground: var(--tg-text);
@@ -37,7 +39,7 @@
   --accent-foreground: var(--tg-text);
   --destructive: var(--tg-destructive);
   --border: oklch(0.92 0 0);
-  --input: oklch(0.92 0 0);
+  --input: oklch(0.94 0 0);
   --ring: var(--tg-button);
 }
 
@@ -66,23 +68,62 @@
   --color-ring: var(--ring);
 }
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 html,
 body {
   background: var(--background);
   color: var(--foreground);
-  -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  /* Use Telegram's stable viewport to avoid keyboard/toolbar jitter */
+  min-height: var(--tg-stable-h, 100vh);
+}
+
+body {
+  min-height: var(--tg-stable-h, 100vh);
 }
 
 .tma-body {
-  min-height: var(--tg-stable-h);
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+  min-height: var(--tg-stable-h, 100vh);
+}
+
+/* Container that respects Telegram's top safe area (where the close/minimize buttons sit) */
+.tma-safe-top {
+  padding-top: calc(var(--tg-content-safe-top, 0px) + 0.5rem);
+}
+.tma-safe-bottom {
+  padding-bottom: calc(var(--tg-content-safe-bottom, 0px) + 0.5rem);
+}
+
+/* Hide native scrollbars on mobile-feel surfaces */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+/* Subtle elevation that respects the Telegram theme */
+.elev-1 { box-shadow: 0 1px 2px 0 oklch(0 0 0 / 0.04), 0 0 0 1px oklch(0 0 0 / 0.04); }
+.elev-2 { box-shadow: 0 4px 12px -2px oklch(0 0 0 / 0.06), 0 0 0 1px oklch(0 0 0 / 0.04); }
+
+button, [role="button"] {
+  touch-action: manipulation;
+}
+
+input, textarea {
+  font-size: 16px; /* Prevents iOS Safari zoom on focus */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --border: oklch(0.25 0 0);
+    --border: oklch(0.28 0 0);
     --input: oklch(0.25 0 0);
   }
+  .elev-1 { box-shadow: 0 1px 2px 0 oklch(0 0 0 / 0.4), 0 0 0 1px oklch(1 0 0 / 0.06); }
+  .elev-2 { box-shadow: 0 4px 12px -2px oklch(0 0 0 / 0.5), 0 0 0 1px oklch(1 0 0 / 0.06); }
 }

@@ -172,7 +172,7 @@ export function BattleArena({ battle, initialOpponent }: BattleArenaProps) {
 
   if (status === 'EVALUATING' || (submitted && !opponent?.submitted && timeLeft > 0)) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 space-y-4">
+      <div className="min-h-[var(--tg-stable-h,100vh)] flex flex-col items-center justify-center p-6 space-y-4">
         <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
           <Loader2 className="w-10 h-10 text-primary animate-spin" />
         </div>
@@ -189,9 +189,9 @@ export function BattleArena({ battle, initialOpponent }: BattleArenaProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-[var(--tg-stable-h,100vh)] flex flex-col">
       {/* Header — opponent + me bars */}
-      <div className="px-3 pt-3 pb-2 bg-card border-b sticky top-0 z-10 space-y-2">
+      <div className="px-3 pt-3 pb-2 bg-card/95 backdrop-blur border-b sticky top-0 z-10 space-y-2">
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {user?.photoUrl ? (
@@ -298,9 +298,13 @@ export function BattleArena({ battle, initialOpponent }: BattleArenaProps) {
       />
 
       {/* Bottom */}
-      <div className="p-3 border-t bg-card">
+      <div
+        className="p-3 border-t bg-card sticky bottom-0"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
+      >
         <Button
-          className="w-full gap-2"
+          size="lg"
+          className="w-full gap-2 h-11 rounded-xl"
           onClick={() => handleSubmit(false)}
           disabled={submitted || isSubmitting || wordCount < minWords}
         >
