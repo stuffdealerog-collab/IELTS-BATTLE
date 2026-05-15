@@ -157,25 +157,32 @@ export default function HomePage() {
         </div>
 
         {/* Teacher / Student tools */}
-        <div className="flex gap-2">
-          {user.role === 'TEACHER' ? (
-            <Link
-              href="/teacher"
-              className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl border bg-secondary/50 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-secondary transition-colors"
-            >
-              <School className="w-3.5 h-3.5" />
-              Teacher Dashboard
-            </Link>
-          ) : (
+        {user.role === 'TEACHER' ? (
+          <Link
+            href="/teacher"
+            className="flex items-center justify-center gap-1.5 h-9 rounded-xl border bg-secondary/50 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-secondary transition-colors"
+          >
+            <School className="w-3.5 h-3.5" />
+            Teacher Dashboard
+          </Link>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
             <Link
               href="/join"
-              className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl border bg-secondary/50 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-secondary transition-colors"
+              className="flex items-center justify-center gap-1.5 h-9 rounded-xl border bg-secondary/50 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-secondary transition-colors"
             >
               <Users className="w-3.5 h-3.5" />
               Join a Class
             </Link>
-          )}
-        </div>
+            <Link
+              href="/teacher/register"
+              className="flex items-center justify-center gap-1.5 h-9 rounded-xl border bg-secondary/50 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-secondary transition-colors"
+            >
+              <School className="w-3.5 h-3.5" />
+              Become a Teacher
+            </Link>
+          </div>
+        )}
 
         <p className="text-center text-[11px] text-muted-foreground pt-1">
           Master Writing Task 1 &amp; 2 with real exam topics
