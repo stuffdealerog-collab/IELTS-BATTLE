@@ -19,6 +19,7 @@ export async function GET() {
       rating: user.rating,
       wins: user.wins,
       losses: user.losses,
+      role: user.role,
     },
   })
 }

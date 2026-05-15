@@ -23,6 +23,7 @@ interface AppUser {
   rating: number
   wins: number
   losses: number
+  role: string
 }
 
 interface TMAContextValue {

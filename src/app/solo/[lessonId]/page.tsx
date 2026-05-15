@@ -92,6 +92,9 @@ export default async function LessonPage({ params, searchParams }: PageProps) {
             title: s.title,
             instruction: s.instruction,
             starter: s.starter,
+            vocabBank: s.vocabBank ? JSON.parse(s.vocabBank) : null,
+            grammarTip: s.grammarTip ?? null,
+            modelAnswer: s.modelAnswer ?? null,
           })),
         }}
         topic={{

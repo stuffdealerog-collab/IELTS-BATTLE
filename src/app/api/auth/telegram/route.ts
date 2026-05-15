@@ -42,6 +42,7 @@ export async function POST(req: Request) {
       rating: user.rating,
       wins: user.wins,
       losses: user.losses,
+      role: user.role,
     },
   })
 }

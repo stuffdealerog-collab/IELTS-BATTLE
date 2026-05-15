@@ -21,9 +21,17 @@ import {
   Shuffle,
   FileText,
   Image as ImageIcon,
+  BookOpen,
+  Lightbulb,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+
+interface VocabItem {
+  word: string
+  definition: string
+  example: string
+}
 
 interface LessonStep {
   id: string
@@ -32,6 +40,9 @@ interface LessonStep {
   title: string
   instruction: string
   starter: string | null
+  vocabBank: VocabItem[] | null
+  grammarTip: string | null
+  modelAnswer: string | null
 }
 
 interface Lesson {
@@ -89,6 +100,9 @@ export function TutorChat({ lesson, topic, initialProgress }: TutorChatProps) {
   const [essayDraft, setEssayDraft] = useState(initialProgress?.essayDraft ?? '')
   const [allDone, setAllDone] = useState(initialProgress?.completed ?? false)
   const [topicExpanded, setTopicExpanded] = useState(true)
+  const [vocabExpanded, setVocabExpanded] = useState(true)
+  const [modelExpanded, setModelExpanded] = useState(false)
+  const [passedStepIdx, setPassedStepIdx] = useState<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const initRef = useRef(false)
 
@@ -155,9 +169,13 @@ export function TutorChat({ lesson, topic, initialProgress }: TutorChatProps) {
         const newDraft = essayDraft + (essayDraft ? '\n\n' : '') + userMsg
         setEssayDraft(newDraft)
         setAttemptNumber(1)
+        setPassedStepIdx(currentStepIdx)
+        setModelExpanded(false)
 
         if (currentStepIdx + 1 < lesson.steps.length) {
           setTimeout(() => {
+            setPassedStepIdx(null)
+            setVocabExpanded(true)
             setCurrentStepIdx((i) => i + 1)
             setMessages((m) => [
               ...m,
@@ -325,6 +343,87 @@ export function TutorChat({ lesson, topic, initialProgress }: TutorChatProps) {
           </div>
         </div>
       </div>
+
+      {/* Vocab Bank */}
+      {currentStep.vocabBank && currentStep.vocabBank.length > 0 && (
+        <div className="border-b bg-background">
+          <div className="mx-auto w-full max-w-2xl px-4 pb-2">
+            <button
+              onClick={() => setVocabExpanded((v) => !v)}
+              className="w-full flex items-center gap-2 py-2 text-left"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide flex-1">
+                Vocab Bank ({currentStep.vocabBank.length} words)
+              </span>
+              {vocabExpanded ? (
+                <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+              )}
+            </button>
+            {vocabExpanded && (
+              <div className="grid grid-cols-1 gap-1.5 pb-1">
+                {currentStep.grammarTip && (
+                  <div className="rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 px-3 py-2 flex gap-2">
+                    <Lightbulb className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <p className="text-[11px] leading-relaxed text-amber-900 dark:text-amber-200">
+                      <strong>Grammar tip:</strong> {currentStep.grammarTip}
+                    </p>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-1.5">
+                  {currentStep.vocabBank.map((v) => (
+                    <div
+                      key={v.word}
+                      className="rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 px-2.5 py-2"
+                    >
+                      <p className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 leading-tight">
+                        {v.word}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground leading-snug mt-0.5 line-clamp-2">
+                        {v.definition}
+                      </p>
+                      <p className="text-[10px] italic text-foreground/60 leading-snug mt-0.5 line-clamp-1">
+                        &ldquo;{v.example}&rdquo;
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Model Answer (shown after passing) */}
+      {passedStepIdx === currentStepIdx && currentStep.modelAnswer && (
+        <div className="border-b bg-background">
+          <div className="mx-auto w-full max-w-2xl px-4 pb-2">
+            <button
+              onClick={() => setModelExpanded((v) => !v)}
+              className="w-full flex items-center gap-2 py-2 text-left"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+              <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wide flex-1">
+                See model answer
+              </span>
+              {modelExpanded ? (
+                <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+              )}
+            </button>
+            {modelExpanded && (
+              <div className="rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 px-3 py-2.5 mb-1">
+                <p className="text-[11px] leading-relaxed text-foreground/90 whitespace-pre-wrap">
+                  {currentStep.modelAnswer}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Chat */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">

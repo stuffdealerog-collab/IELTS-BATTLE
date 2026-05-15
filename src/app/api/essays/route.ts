@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/jwt'
 import { prisma } from '@/lib/prisma'
+import { detectAiWriting } from '@/lib/ai-detector'
 
 export async function GET() {
   const session = await getSession()
@@ -34,6 +35,23 @@ export async function POST(req: Request) {
       submittedAt: isDraft ? null : new Date(),
     },
   })
+
+  // Run AI detection in background (non-blocking)
+  if (!isDraft && content.trim()) {
+    detectAiWriting(content, wordCount ?? 0)
+      .then((result) => {
+        if (!result) return
+        return prisma.essay.update({
+          where: { id: essay.id },
+          data: {
+            aiScore: result.score,
+            aiVerdict: result.verdict,
+            aiFlags: JSON.stringify(result.flags),
+          },
+        })
+      })
+      .catch(() => {})
+  }
 
   return NextResponse.json({ essayId: essay.id }, { status: 201 })
 }

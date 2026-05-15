@@ -47,6 +47,9 @@ async function main() {
           instruction: step.instruction,
           evaluationCriteria: step.evaluationCriteria,
           starter: step.starter ?? null,
+          vocabBank: step.vocabBank ? JSON.stringify(step.vocabBank) : null,
+          grammarTip: step.grammarTip ?? null,
+          modelAnswer: step.modelAnswer ?? null,
         },
       })
     }

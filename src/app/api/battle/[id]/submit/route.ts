@@ -6,6 +6,7 @@ import { anthropic } from '@/lib/anthropic'
 import { buildFeedbackPrompt } from '@/prompts/feedback'
 import { EssayTopic, FeedbackData } from '@/types'
 import { ratingDelta, computeSpeedBonus, computeFinalScore } from '@/lib/elo'
+import { detectAiWriting } from '@/lib/ai-detector'
 
 async function evaluateEssay(content: string, topic: EssayTopic, wordCount: number): Promise<FeedbackData | null> {
   const prompt = buildFeedbackPrompt(content, topic, wordCount)
@@ -139,6 +140,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   // Trigger finalization (don't await — long task)
   finalizeBattleIfReady(id).catch((e) => console.error('finalize error', e))
+
+  // Background AI detection
+  const finalContent = content ?? participant.content
+  if (finalContent?.trim()) {
+    detectAiWriting(finalContent, wordCount ?? participant.wordCount)
+      .then((res) => {
+        if (!res) return
+        return prisma.battleParticipant.update({
+          where: { battleId_userId: { battleId: id, userId: session.userId } },
+          data: { aiScore: res.score, aiVerdict: res.verdict },
+        })
+      })
+      .catch(() => {})
+  }
 
   return NextResponse.json({ ok: true })
 }

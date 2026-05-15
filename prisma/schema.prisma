@@ -15,6 +15,7 @@ model TelegramUser {
   lastName     String?
   photoUrl     String?
   languageCode String?
+  role         String   @default("STUDENT") // STUDENT | TEACHER
   rating       Int      @default(1200)
   wins         Int      @default(0)
   losses       Int      @default(0)
@@ -22,11 +23,15 @@ model TelegramUser {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  essays         Essay[]
-  participations BattleParticipant[]
-  lessonProgress LessonProgress[]
+  essays                Essay[]
+  participations        BattleParticipant[]
+  lessonProgress        LessonProgress[]
+  classroomsTeaching    Classroom[]       @relation("teaching")
+  classroomMemberships  ClassroomMember[]
+  teacherNotes          TeacherNote[]     @relation("notes_written")
 
   @@index([rating])
+  @@index([role])
 }
 
 model EssayTopic {
@@ -38,26 +43,30 @@ model EssayTopic {
   imageDescription String?
   createdAt        DateTime @default(now())
 
-  essays          Essay[]
-  battles         Battle[]
-  lessonProgress  LessonProgress[]
+  essays         Essay[]
+  battles        Battle[]
+  lessonProgress LessonProgress[]
 }
 
 model Essay {
-  id          String     @id @default(cuid())
+  id          String    @id @default(cuid())
   userId      String?
   topicId     String
-  content     String     @default("")
-  wordCount   Int        @default(0)
-  isDraft     Boolean    @default(true)
+  content     String    @default("")
+  wordCount   Int       @default(0)
+  isDraft     Boolean   @default(true)
   timeTaken   Int?
   submittedAt DateTime?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  aiScore     Float?    // 0-10, higher = more likely AI
+  aiVerdict   String?   // LIKELY_HUMAN | UNCERTAIN | LIKELY_AI
+  aiFlags     String?   // JSON string[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  user     TelegramUser? @relation(fields: [userId], references: [id])
-  topic    EssayTopic    @relation(fields: [topicId], references: [id])
-  feedback Feedback?
+  user         TelegramUser?  @relation(fields: [userId], references: [id])
+  topic        EssayTopic     @relation(fields: [topicId], references: [id])
+  feedback     Feedback?
+  teacherNotes TeacherNote[]
 
   @@index([userId])
 }
@@ -111,6 +120,8 @@ model BattleParticipant {
   ratingBefore    Int?
   ratingDelta     Int?
   feedbackJson    String?
+  aiScore         Float?
+  aiVerdict       String?
 
   battle Battle       @relation(fields: [battleId], references: [id])
   user   TelegramUser @relation(fields: [userId], references: [id])
@@ -131,6 +142,48 @@ model MatchmakingQueue {
   @@index([mode, taskType, rating])
 }
 
+// ── Teacher System ───────────────────────────────────────────────────────────
+
+model Classroom {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  teacherId   String
+  description String?
+  createdAt   DateTime @default(now())
+
+  teacher TelegramUser      @relation("teaching", fields: [teacherId], references: [id])
+  members ClassroomMember[]
+
+  @@index([teacherId])
+}
+
+model ClassroomMember {
+  id          String   @id @default(cuid())
+  classroomId String
+  userId      String
+  joinedAt    DateTime @default(now())
+
+  classroom Classroom    @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  user      TelegramUser @relation(fields: [userId], references: [id])
+
+  @@unique([classroomId, userId])
+  @@index([userId])
+}
+
+model TeacherNote {
+  id        String   @id @default(cuid())
+  teacherId String
+  essayId   String?
+  note      String
+  createdAt DateTime @default(now())
+
+  teacher TelegramUser @relation("notes_written", fields: [teacherId], references: [id])
+  essay   Essay?       @relation(fields: [essayId], references: [id])
+}
+
+// ── Enhanced Lessons ─────────────────────────────────────────────────────────
+
 model Lesson {
   id          String   @id @default(cuid())
   taskType    String
@@ -145,7 +198,7 @@ model Lesson {
 }
 
 model LessonStep {
-  id                 String @id @default(cuid())
+  id                 String  @id @default(cuid())
   lessonId           String
   order              Int
   partType           String
@@ -153,6 +206,9 @@ model LessonStep {
   instruction        String
   evaluationCriteria String
   starter            String?
+  vocabBank          String? // JSON: [{word, definition, example}]
+  grammarTip         String? // specific grammar tip for this section
+  modelAnswer        String? // example answer shown after passing
 
   lesson Lesson @relation(fields: [lessonId], references: [id])
 

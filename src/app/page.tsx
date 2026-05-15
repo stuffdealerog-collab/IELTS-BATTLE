@@ -12,6 +12,8 @@ import {
   Crown,
   Zap,
   ChevronRight,
+  School,
+  Users,
 } from 'lucide-react'
 
 export default function HomePage() {
@@ -154,7 +156,28 @@ export default function HomePage() {
           <StatCard label="Losses" value={user.losses} />
         </div>
 
-        <p className="text-center text-[11px] text-muted-foreground pt-2">
+        {/* Teacher / Student tools */}
+        <div className="flex gap-2">
+          {user.role === 'TEACHER' ? (
+            <Link
+              href="/teacher"
+              className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl border bg-secondary/50 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-secondary transition-colors"
+            >
+              <School className="w-3.5 h-3.5" />
+              Teacher Dashboard
+            </Link>
+          ) : (
+            <Link
+              href="/join"
+              className="flex-1 flex items-center justify-center gap-1.5 h-9 rounded-xl border bg-secondary/50 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-secondary transition-colors"
+            >
+              <Users className="w-3.5 h-3.5" />
+              Join a Class
+            </Link>
+          )}
+        </div>
+
+        <p className="text-center text-[11px] text-muted-foreground pt-1">
           Master Writing Task 1 &amp; 2 with real exam topics
         </p>
       </div>
