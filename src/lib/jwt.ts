@@ -1,8 +1,17 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 
+const RAW_SECRET = process.env.JWT_SECRET
+if (!RAW_SECRET || RAW_SECRET.length < 32) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET must be set to a 32+ character string in production')
+  }
+  console.warn('⚠ JWT_SECRET missing or too short — using dev fallback. DO NOT deploy this.')
+}
 const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? 'dev-secret-replace-in-production-this-must-be-32-bytes-or-more'
+  RAW_SECRET && RAW_SECRET.length >= 32
+    ? RAW_SECRET
+    : 'dev-secret-replace-in-production-this-must-be-32-bytes-or-more'
 )
 const COOKIE = 'ielts_battle_session'
 const ALG = 'HS256'

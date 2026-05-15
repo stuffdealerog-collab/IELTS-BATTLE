@@ -152,7 +152,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           data: { aiScore: res.score, aiVerdict: res.verdict },
         })
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error(`[ai-detect] battle ${id} user ${session.userId} failed:`, err)
+      })
   }
 
   return NextResponse.json({ ok: true })

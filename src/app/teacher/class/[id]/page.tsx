@@ -58,13 +58,23 @@ export default function ClassroomPage() {
   useEffect(() => {
     if (!id) return
     fetch(`/api/teacher/classroom/${id}`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (!r.ok) {
+          const { error } = await r.json().catch(() => ({ error: 'Failed to load class' }))
+          toast.error(error ?? 'Failed to load class')
+          if (r.status === 401 || r.status === 403) router.replace('/teacher')
+          return null
+        }
+        return r.json()
+      })
       .then((d) => {
+        if (!d) return
         setClassroom(d.classroom)
         setStudents(d.students ?? [])
       })
+      .catch(() => toast.error('Network error'))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, router])
 
   const copyCode = async () => {
     if (!classroom) return

@@ -45,17 +45,23 @@ ${content.slice(0, 2000)}${content.length > 2000 ? '\n[truncated]' : ''}
 """`
 
   try {
-    const resp = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 300,
-      system: SYSTEM,
-      messages: [{ role: 'user', content: prompt }],
-    })
+    const resp = await Promise.race([
+      anthropic.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 300,
+        system: SYSTEM,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('AI detection timeout')), 30_000)
+      ),
+    ])
     const block = resp.content.find((c) => c.type === 'text')
     const text = block?.type === 'text' ? block.text : ''
-    const match = text.match(/\{[\s\S]*\}/)
-    if (!match) return null
-    const parsed = JSON.parse(match[0]) as AiDetectionResult
+    const start = text.indexOf('{')
+    const end = text.lastIndexOf('}')
+    if (start === -1 || end === -1 || end <= start) return null
+    const parsed = JSON.parse(text.slice(start, end + 1)) as AiDetectionResult
     return {
       score: Math.min(10, Math.max(0, Number(parsed.score) || 0)),
       verdict: (['LIKELY_HUMAN', 'UNCERTAIN', 'LIKELY_AI'].includes(parsed.verdict)
@@ -63,7 +69,8 @@ ${content.slice(0, 2000)}${content.length > 2000 ? '\n[truncated]' : ''}
         : 'UNCERTAIN') as AiVerdict,
       flags: Array.isArray(parsed.flags) ? parsed.flags.slice(0, 5) : [],
     }
-  } catch {
+  } catch (err) {
+    console.error('[ai-detector] failed:', err instanceof Error ? err.message : err)
     return null
   }
 }

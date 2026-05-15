@@ -101,10 +101,21 @@ export default function StudentDetailPage() {
   useEffect(() => {
     if (!userId || !classroomId) return
     fetch(`/api/teacher/student/${userId}`)
-      .then((r) => r.json())
-      .then((d) => setStudent(d.student ?? null))
+      .then(async (r) => {
+        if (!r.ok) {
+          const { error } = await r.json().catch(() => ({ error: 'Failed to load student' }))
+          toast.error(error ?? 'Failed to load student')
+          if (r.status === 401 || r.status === 403) router.replace(`/teacher/class/${classroomId}`)
+          return null
+        }
+        return r.json()
+      })
+      .then((d) => {
+        if (d) setStudent(d.student ?? null)
+      })
+      .catch(() => toast.error('Network error'))
       .finally(() => setLoading(false))
-  }, [userId, classroomId])
+  }, [userId, classroomId, router])
 
   const handleAddNote = async (essayId: string) => {
     const note = noteText[essayId]?.trim()
@@ -232,8 +243,12 @@ export default function StudentDetailPage() {
                             Band {e.overallBand.toFixed(1)}
                           </Badge>
                         )}
-                        {vd && (
+                        {vd ? (
                           <Badge className={`border-0 text-[10px] h-4 px-1.5 ${vd.cls}`}>{vd.label}</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] h-4 px-1.5 text-muted-foreground">
+                            AI check pending
+                          </Badge>
                         )}
                       </div>
                     </div>

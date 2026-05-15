@@ -18,15 +18,16 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const session = await getSession()
-  const { topicId, content, wordCount, isDraft, timeTaken } = await req.json()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { topicId, content, wordCount, isDraft, timeTaken } = await req.json()
   if (!topicId || !content) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
   }
 
   const essay = await prisma.essay.create({
     data: {
-      userId: session?.userId ?? null,
+      userId: session.userId,
       topicId,
       content,
       wordCount: wordCount ?? 0,
@@ -50,7 +51,9 @@ export async function POST(req: Request) {
           },
         })
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error(`[ai-detect] essay ${essay.id} failed:`, err)
+      })
   }
 
   return NextResponse.json({ essayId: essay.id }, { status: 201 })

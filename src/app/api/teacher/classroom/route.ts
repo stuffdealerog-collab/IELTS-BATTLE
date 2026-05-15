@@ -33,12 +33,20 @@ export async function POST(req: Request) {
   const { name, description } = await req.json()
   if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 })
 
-  // Generate unique 6-char code
+  // Generate unique 6-char code (max 10 attempts to avoid hot loop)
   let code = generateCode()
   let exists = await prisma.classroom.findUnique({ where: { code } })
-  while (exists) {
+  let attempts = 0
+  while (exists && attempts < 10) {
     code = generateCode()
     exists = await prisma.classroom.findUnique({ where: { code } })
+    attempts++
+  }
+  if (exists) {
+    return NextResponse.json(
+      { error: 'Could not generate unique code, try again' },
+      { status: 503 }
+    )
   }
 
   const classroom = await prisma.classroom.create({

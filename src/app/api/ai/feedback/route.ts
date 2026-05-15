@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
 import { anthropic } from '@/lib/anthropic'
 import { prisma } from '@/lib/prisma'
+import { getSession } from '@/lib/jwt'
 import { buildFeedbackPrompt } from '@/prompts/feedback'
 import { FeedbackData, EssayTopic } from '@/types'
 
 export async function POST(req: Request) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { essayId, content, topicId, wordCount } = await req.json()
 
   if (!essayId || !content || !topicId) {
