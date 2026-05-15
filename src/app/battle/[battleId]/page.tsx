@@ -28,6 +28,18 @@ export default async function BattlePage({ params }: PageProps) {
 
   const opp = battle.participants.find((p) => p.userId !== session.userId)
 
+  const botOpponent = battle.isBotBattle
+    ? {
+        username: null as string | null,
+        firstName: `AI Bot (Band ${battle.botBand?.toFixed(1) ?? '?'})` as string | null,
+        photoUrl: null as string | null,
+        rating: 1000 + Math.round((battle.botBand ?? 6) * 50),
+        wordCount: 0,
+        submitted: !!battle.botEssay,
+        isBot: true,
+      }
+    : null
+
   return (
     <BattleArena
       battle={{
@@ -38,9 +50,11 @@ export default async function BattlePage({ params }: PageProps) {
         timeLimit: battle.timeLimit,
         startedAt: battle.startedAt!.toISOString(),
         topic: battle.topic,
+        isBotBattle: battle.isBotBattle,
       }}
       initialOpponent={
-        opp
+        botOpponent ??
+        (opp
           ? {
               username: opp.user.username,
               firstName: opp.user.firstName,
@@ -49,7 +63,7 @@ export default async function BattlePage({ params }: PageProps) {
               wordCount: opp.wordCount,
               submitted: !!opp.submittedAt,
             }
-          : null
+          : null)
       }
     />
   )

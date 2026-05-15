@@ -8,27 +8,32 @@ datasource db {
 }
 
 model TelegramUser {
-  id           String   @id @default(cuid())
-  telegramId   BigInt   @unique
+  id           String    @id @default(cuid())
+  telegramId   BigInt    @unique
   username     String?
   firstName    String?
   lastName     String?
   photoUrl     String?
   languageCode String?
-  role         String   @default("STUDENT") // STUDENT | TEACHER
-  rating       Int      @default(1200)
-  wins         Int      @default(0)
-  losses       Int      @default(0)
-  draws        Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  role         String    @default("STUDENT") // STUDENT | TEACHER
+  rating       Int       @default(1200)
+  wins         Int       @default(0)
+  losses       Int       @default(0)
+  draws        Int       @default(0)
+  xp           Int       @default(0)
+  streak       Int       @default(0)
+  lastActiveAt DateTime?
+  currentBand  Float?    // estimated from placement test / battle history
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   essays                Essay[]
   participations        BattleParticipant[]
   lessonProgress        LessonProgress[]
-  classroomsTeaching    Classroom[]       @relation("teaching")
+  classroomsTeaching    Classroom[]         @relation("teaching")
   classroomMemberships  ClassroomMember[]
-  teacherNotes          TeacherNote[]     @relation("notes_written")
+  teacherNotes          TeacherNote[]       @relation("notes_written")
+  dailyChallenges       DailyChallenge[]
 
   @@index([rating])
   @@index([role])
@@ -86,16 +91,20 @@ model Feedback {
 }
 
 model Battle {
-  id        String    @id @default(cuid())
-  topicId   String
-  mode      String
-  partType  String?
-  status    String    @default("WAITING")
-  timeLimit Int
-  startedAt DateTime?
-  endedAt   DateTime?
-  winnerId  String?
-  createdAt DateTime  @default(now())
+  id          String    @id @default(cuid())
+  topicId     String
+  mode        String
+  partType    String?
+  status      String    @default("WAITING")
+  timeLimit   Int
+  startedAt   DateTime?
+  endedAt     DateTime?
+  winnerId    String?
+  isBotBattle Boolean   @default(false)
+  botBand     Float?    // bot difficulty: 5.0 - 8.0
+  botEssay    String?   // AI-generated bot essay content
+  botScore    Float?    // bot's band score
+  createdAt   DateTime  @default(now())
 
   topic        EssayTopic          @relation(fields: [topicId], references: [id])
   participants BattleParticipant[]
@@ -180,6 +189,25 @@ model TeacherNote {
 
   teacher TelegramUser @relation("notes_written", fields: [teacherId], references: [id])
   essay   Essay?       @relation(fields: [essayId], references: [id])
+}
+
+// ── Gamification ─────────────────────────────────────────────────────────────
+
+model DailyChallenge {
+  id          String    @id @default(cuid())
+  userId      String
+  date        String    // YYYY-MM-DD
+  type        String    // WRITING_SPRINT | VOCAB | READING_SNIPPET
+  prompt      String    // task text
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  xpReward    Int       @default(50)
+  createdAt   DateTime  @default(now())
+
+  user TelegramUser @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+  @@index([userId])
 }
 
 // ── Enhanced Lessons ─────────────────────────────────────────────────────────

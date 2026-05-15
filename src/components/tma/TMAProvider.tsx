@@ -33,6 +33,13 @@ interface AppUser {
   wins: number
   losses: number
   role: string
+  xp: number
+  level: number
+  xpProgress: number
+  xpNeeded: number
+  streak: number
+  currentBand?: number | null
+  dailyDone: boolean
   classroom?: ClassroomInfo | null
 }
 

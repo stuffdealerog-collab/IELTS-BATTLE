@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/jwt'
 import { prisma } from '@/lib/prisma'
+import { levelFromXp, xpToNextLevel } from '@/lib/gamification'
 
 export async function GET() {
   const session = await getSession()
@@ -40,6 +41,13 @@ export async function GET() {
       }
     : null
 
+  const xpInfo = xpToNextLevel(user.xp)
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayChallenge = await prisma.dailyChallenge.findUnique({
+    where: { userId_date: { userId: user.id, date: todayStr } },
+    select: { completed: true },
+  })
+
   return NextResponse.json({
     user: {
       id: user.id,
@@ -51,6 +59,13 @@ export async function GET() {
       wins: user.wins,
       losses: user.losses,
       role: user.role,
+      xp: user.xp,
+      level: xpInfo.level,
+      xpProgress: xpInfo.current,
+      xpNeeded: xpInfo.needed,
+      streak: user.streak,
+      currentBand: user.currentBand,
+      dailyDone: todayChallenge?.completed ?? false,
       classroom,
     },
   })

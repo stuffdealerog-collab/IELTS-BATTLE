@@ -2,22 +2,17 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/jwt'
 import { publish, battleChannel } from '@/lib/pusher-server'
-import { anthropic } from '@/lib/anthropic'
+import { orChat } from '@/lib/openrouter'
 import { buildFeedbackPrompt } from '@/prompts/feedback'
 import { EssayTopic, FeedbackData } from '@/types'
 import { ratingDelta, computeSpeedBonus, computeFinalScore } from '@/lib/elo'
 import { detectAiWriting } from '@/lib/ai-detector'
+import { awardXp, updateStreak, XP } from '@/lib/gamification'
 
 async function evaluateEssay(content: string, topic: EssayTopic, wordCount: number): Promise<FeedbackData | null> {
   const prompt = buildFeedbackPrompt(content, topic, wordCount)
   try {
-    const resp = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
-      messages: [{ role: 'user', content: prompt }],
-    })
-    const block = resp.content.find((c) => c.type === 'text')
-    const text = block && block.type === 'text' ? block.text : ''
+    const text = await orChat('essay_grading', [{ role: 'user', content: prompt }], { maxTokens: 2000 })
     const match = text.match(/<<<JSON\s*([\s\S]*?)\s*JSON>>>/)
     if (!match) return null
     return JSON.parse(match[1]) as FeedbackData
@@ -34,7 +29,10 @@ async function finalizeBattleIfReady(battleId: string) {
   if (!battle) return
   if (battle.status === 'COMPLETED') return
 
-  const allSubmitted = battle.participants.every((p) => p.submittedAt)
+  // For bot battles there is only 1 real participant (bot has no row)
+  const realParticipants = battle.participants
+
+  const allSubmitted = realParticipants.every((p) => p.submittedAt)
   const timeExpired =
     battle.startedAt &&
     Date.now() - battle.startedAt.getTime() >= battle.timeLimit * 1000
@@ -44,9 +42,9 @@ async function finalizeBattleIfReady(battleId: string) {
   await prisma.battle.update({ where: { id: battleId }, data: { status: 'EVALUATING' } })
   publish(battleChannel(battleId), 'battle-evaluating', {})
 
-  // Evaluate both
+  // Evaluate real participants
   const evals = await Promise.all(
-    battle.participants.map(async (p) => {
+    realParticipants.map(async (p) => {
       if (!p.content.trim()) {
         return { p, feedback: null as FeedbackData | null }
       }
@@ -55,7 +53,7 @@ async function finalizeBattleIfReady(battleId: string) {
     })
   )
 
-  // Compute scores
+  // Compute scores for real participants
   const scored = evals.map(({ p, feedback }) => {
     const band = feedback?.overallBand ?? 0
     const timeTakenSec = p.submittedAt && battle.startedAt
@@ -66,13 +64,63 @@ async function finalizeBattleIfReady(battleId: string) {
     return { p, feedback, band, speedBonus, finalScore }
   })
 
-  // Determine winner
-  const [a, b] = scored
+  // For bot battle: compare against bot score from battle record
   let winnerId: string | null = null
-  if (a.finalScore > b.finalScore) winnerId = a.p.userId
-  else if (b.finalScore > a.finalScore) winnerId = b.p.userId
+  if (battle.isBotBattle && scored.length === 1) {
+    const player = scored[0]
+    const botScore = battle.botScore ?? 0
+    const botFinalScore = computeFinalScore(botScore, 0)
+    if (player.finalScore > botFinalScore) winnerId = player.p.userId
+    // else bot wins (winnerId stays null to indicate loss for player)
 
-  // Calculate rating changes
+    const result = winnerId === player.p.userId ? 'win' : 'loss'
+    const mockBotRating = 1000 + (battle.botBand ?? 6) * 50
+    const delta = ratingDelta(player.p.user.rating, mockBotRating, result)
+
+    await prisma.battleParticipant.update({
+      where: { battleId_userId: { battleId, userId: player.p.userId } },
+      data: {
+        bandScore: player.band,
+        taskAchievement: player.feedback?.taskAchievement ?? null,
+        coherence: player.feedback?.coherence ?? null,
+        lexical: player.feedback?.lexical ?? null,
+        grammar: player.feedback?.grammar ?? null,
+        speedBonus: player.speedBonus,
+        finalScore: player.finalScore,
+        ratingBefore: player.p.user.rating,
+        ratingDelta: delta,
+        feedbackJson: player.feedback ? JSON.stringify(player.feedback) : null,
+      },
+    })
+
+    await prisma.telegramUser.update({
+      where: { id: player.p.userId },
+      data: {
+        rating: { increment: delta },
+        wins: result === 'win' ? { increment: 1 } : undefined,
+        losses: result === 'loss' ? { increment: 1 } : undefined,
+        currentBand: player.band > 0 ? player.band : undefined,
+      },
+    })
+
+    // Award XP
+    const xp = result === 'win' ? XP.BATTLE_WIN : XP.BATTLE_LOSS
+    await awardXp(player.p.userId, xp).catch(() => {})
+    await updateStreak(player.p.userId).catch(() => {})
+
+    await prisma.battle.update({
+      where: { id: battleId },
+      data: { status: 'COMPLETED', endedAt: new Date(), winnerId },
+    })
+    publish(battleChannel(battleId), 'battle-completed', { winnerId, isBotBattle: true, botBand: battle.botBand })
+    return
+  }
+
+  // Human vs human
+  const [a, b] = scored
+  if (a.finalScore > b.finalScore) winnerId = a.p.userId
+  else if (b && b.finalScore > a.finalScore) winnerId = b.p.userId
+
   for (const s of scored) {
     const opp = scored.find((o) => o.p.userId !== s.p.userId)!
     const result = winnerId === null ? 'draw' : winnerId === s.p.userId ? 'win' : 'loss'
@@ -101,8 +149,14 @@ async function finalizeBattleIfReady(battleId: string) {
         wins: result === 'win' ? { increment: 1 } : undefined,
         losses: result === 'loss' ? { increment: 1 } : undefined,
         draws: result === 'draw' ? { increment: 1 } : undefined,
+        currentBand: s.band > 0 ? s.band : undefined,
       },
     })
+
+    // Award XP
+    const xp = result === 'win' ? XP.BATTLE_WIN : result === 'loss' ? XP.BATTLE_LOSS : XP.BATTLE_LOSS
+    await awardXp(s.p.userId, xp).catch(() => {})
+    await updateStreak(s.p.userId).catch(() => {})
   }
 
   await prisma.battle.update({

@@ -3,6 +3,7 @@ import { getSession } from '@/lib/jwt'
 import { prisma } from '@/lib/prisma'
 import { detectAiWriting } from '@/lib/ai-detector'
 import { generateAutoFeedback } from '@/lib/auto-feedback'
+import { awardXp, updateStreak, XP } from '@/lib/gamification'
 
 export async function GET() {
   const session = await getSession()
@@ -37,6 +38,13 @@ export async function POST(req: Request) {
       submittedAt: isDraft ? null : new Date(),
     },
   })
+
+  // Award XP for submission (non-blocking)
+  if (!isDraft) {
+    awardXp(session.userId, XP.ESSAY_SUBMITTED)
+      .then(() => updateStreak(session.userId))
+      .catch((e) => console.error('[xp] essay submit:', e))
+  }
 
   // Run AI detection + auto-feedback in background (non-blocking, parallel)
   if (!isDraft && content.trim()) {

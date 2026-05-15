@@ -1,4 +1,4 @@
-import { anthropic } from '@/lib/anthropic'
+import { orChat } from '@/lib/openrouter'
 
 export type AiVerdict = 'LIKELY_HUMAN' | 'UNCERTAIN' | 'LIKELY_AI'
 
@@ -8,9 +8,6 @@ export interface AiDetectionResult {
   flags: string[]
 }
 
-const SYSTEM = `You are an academic integrity expert who detects AI-generated writing.
-Analyze essays for signs of AI vs human authorship. Return ONLY valid JSON — no prose.`
-
 export async function detectAiWriting(
   content: string,
   wordCount: number
@@ -19,25 +16,12 @@ export async function detectAiWriting(
 
   const prompt = `Analyze this IELTS essay for signs of AI generation.
 
-Score 0–10:
-0 = Definitely human (personal voice, natural imperfections, idiosyncratic examples)
-5 = Uncertain
-10 = Definitely AI (formulaic, generic, suspiciously perfect)
+Score 0–10: 0=Definitely human, 5=Uncertain, 10=Definitely AI.
 
-AI indicators to check:
-1. Absence of genuine personal opinions or locally-specific examples
-2. Overly uniform sentence length and parallel structure throughout
-3. Generic/unverifiable evidence ("studies show", "research suggests" without specifics)
-4. Mechanical transitions that feel copy-pasted (Firstly… Furthermore… In conclusion…)
-5. No hedging, colloquialisms, or natural hesitations
-6. Academic register too polished for a test-taker's level
-7. Every paragraph exactly the same length
-8. Topic sentences that could appear in any essay on this topic
+Check: absence of personal voice, uniform sentence length, generic evidence ("studies show"), mechanical transitions, no hedging/colloquialisms, overly polished academic register, identical paragraph lengths, topic sentences usable in any essay.
 
-Return ONLY this JSON:
-{"score": <0-10>, "verdict": "LIKELY_HUMAN"|"UNCERTAIN"|"LIKELY_AI", "flags": ["<reason>", ...]}
-
-Use "LIKELY_HUMAN" if score ≤ 3, "UNCERTAIN" if 4-6, "LIKELY_AI" if ≥ 7.
+Return ONLY JSON: {"score":<0-10>,"verdict":"LIKELY_HUMAN"|"UNCERTAIN"|"LIKELY_AI","flags":["<reason>",...]}
+Use LIKELY_HUMAN if ≤3, UNCERTAIN if 4-6, LIKELY_AI if ≥7.
 
 Essay (${wordCount} words):
 """
@@ -45,22 +29,21 @@ ${content.slice(0, 2000)}${content.length > 2000 ? '\n[truncated]' : ''}
 """`
 
   try {
-    const resp = await Promise.race([
-      anthropic.messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 300,
-        system: SYSTEM,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('AI detection timeout')), 30_000)
-      ),
-    ])
-    const block = resp.content.find((c) => c.type === 'text')
-    const text = block?.type === 'text' ? block.text : ''
+    const text = await orChat(
+      'ai_detection',
+      [
+        {
+          role: 'system',
+          content:
+            'You are an academic integrity expert. Return ONLY valid JSON, no prose or markdown.',
+        },
+        { role: 'user', content: prompt },
+      ],
+      { maxTokens: 300, temperature: 0.1, timeoutMs: 30_000 }
+    )
     const start = text.indexOf('{')
     const end = text.lastIndexOf('}')
-    if (start === -1 || end === -1 || end <= start) return null
+    if (start === -1 || end === -1) return null
     const parsed = JSON.parse(text.slice(start, end + 1)) as AiDetectionResult
     return {
       score: Math.min(10, Math.max(0, Number(parsed.score) || 0)),

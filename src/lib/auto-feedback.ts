@@ -1,11 +1,11 @@
-import { anthropic } from '@/lib/anthropic'
+import { orChat } from '@/lib/openrouter'
 import { prisma } from '@/lib/prisma'
 import { buildFeedbackPrompt } from '@/prompts/feedback'
 import type { EssayTopic, FeedbackData } from '@/types'
 
 /**
- * Generates IELTS band scores asynchronously and saves to the Feedback table.
- * Fire-and-forget — called after essay/battle submit so teachers see scores immediately.
+ * Generates IELTS band scores via OpenRouter (claude-sonnet for quality).
+ * Fire-and-forget after essay/battle submit.
  */
 export async function generateAutoFeedback(essayId: string): Promise<void> {
   const essay = await prisma.essay.findUnique({
@@ -21,19 +21,12 @@ export async function generateAutoFeedback(essayId: string): Promise<void> {
     essay.wordCount
   )
 
-  const resp = await Promise.race([
-    anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 3000,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Auto-feedback timeout')), 60_000)
-    ),
-  ])
+  const text = await orChat(
+    'essay_grading',
+    [{ role: 'user', content: prompt }],
+    { maxTokens: 3000, timeoutMs: 60_000 }
+  )
 
-  const block = resp.content.find((c) => c.type === 'text')
-  const text = block?.type === 'text' ? block.text : ''
   const match = text.match(/<<<JSON\s*([\s\S]*?)\s*JSON>>>/)
   if (!match) throw new Error('No JSON block in auto-feedback response')
 

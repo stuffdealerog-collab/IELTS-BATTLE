@@ -13,7 +13,7 @@ import { useTMA } from '@/components/tma/TMAProvider'
 import { getBattleMinWords } from '@/lib/battle-config'
 import { formatTime, countWords, cn } from '@/lib/utils'
 import { PART_LABELS } from '@/lib/battle-config'
-import { Send, Swords, Clock, CheckCircle2, Loader2 } from 'lucide-react'
+import { Send, Swords, Clock, CheckCircle2, Loader2, Bot } from 'lucide-react'
 
 interface BattleData {
   id: string
@@ -22,6 +22,7 @@ interface BattleData {
   partType: string | null
   timeLimit: number
   startedAt: string
+  isBotBattle?: boolean
   topic: {
     id: string
     taskType: string
@@ -39,6 +40,7 @@ interface OpponentInfo {
   rating: number
   wordCount: number
   submitted: boolean
+  isBot?: boolean
 }
 
 interface BattleArenaProps {
@@ -222,7 +224,11 @@ export function BattleArena({ battle, initialOpponent }: BattleArenaProps) {
                 {opponent?.wordCount ?? 0}w {opponent?.submitted && '✓'}
               </p>
             </div>
-            {opponent?.photoUrl ? (
+            {opponent?.isBot ? (
+              <div className="w-7 h-7 rounded-full bg-violet-500/10 flex items-center justify-center">
+                <Bot className="w-4 h-4 text-violet-500" />
+              </div>
+            ) : opponent?.photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={opponent.photoUrl} alt="opp" className="w-7 h-7 rounded-full" />
             ) : (

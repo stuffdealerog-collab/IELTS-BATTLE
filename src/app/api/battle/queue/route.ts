@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/jwt'
 import { publish, battleChannel } from '@/lib/pusher-server'
 import { getBattleTimeLimit } from '@/lib/battle-config'
+import { createBotBattle } from '@/lib/bot-battle'
+
+const BOT_WAIT_SECONDS = 15  // match with bot after this many seconds in queue
 
 interface QueueBody {
   mode: 'QUICK' | 'PART' | 'FULL'
@@ -87,6 +90,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ battleId: battle.id, matched: true })
   }
 
+  // Check if user has been waiting long enough for a bot battle
+  const existingEntry = await prisma.matchmakingQueue.findUnique({ where: { userId: user.id } })
+  const waitSecs = existingEntry
+    ? (Date.now() - existingEntry.enqueuedAt.getTime()) / 1000
+    : 0
+
+  if (existingEntry && waitSecs >= BOT_WAIT_SECONDS) {
+    // Match with bot
+    await prisma.matchmakingQueue.deleteMany({ where: { userId: user.id } })
+    const { battleId, botName, botBand } = await createBotBattle({
+      userId: user.id,
+      mode: body.mode,
+      taskType: body.taskType,
+      partType: body.partType ?? undefined,
+      rating: user.rating,
+      userBand: user.currentBand,
+    })
+    publish(`user-${user.id}`, 'match-found', { battleId, isBot: true, botName, botBand })
+    return NextResponse.json({ battleId, matched: true, isBot: true, botName, botBand })
+  }
+
   // No opponent — add to queue
   await prisma.matchmakingQueue.upsert({
     where: { userId: user.id },
@@ -106,7 +130,7 @@ export async function POST(req: Request) {
     },
   })
 
-  return NextResponse.json({ queued: true })
+  return NextResponse.json({ queued: true, botWaitSecs: BOT_WAIT_SECONDS })
 }
 
 export async function DELETE() {
