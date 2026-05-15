@@ -21,6 +21,8 @@ import {
   ChevronUp,
   Send,
   Brain,
+  Sparkles,
+  Target,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -42,6 +44,8 @@ interface Essay {
   aiVerdict: AiVerdict | null
   aiFlags: string[]
   content: string
+  summary: string | null
+  improvements: string[]
   teacherNotes: { id: string; note: string; teacherName: string; createdAt: string }[]
 }
 
@@ -258,19 +262,68 @@ export default function StudentDetailPage() {
                   {isExpanded && (
                     <div className="border-t px-3.5 py-3 space-y-3">
                       {/* Band scores */}
-                      {e.overallBand && (
-                        <div className="grid grid-cols-4 gap-1.5">
-                          {[
-                            ['TA', e.taskAchievement],
-                            ['CC', e.coherence],
-                            ['LR', e.lexical],
-                            ['GRA', e.grammar],
-                          ].map(([label, val]) => (
-                            <div key={label as string} className="rounded-lg bg-secondary p-2 text-center">
-                              <p className="text-[10px] text-muted-foreground">{label}</p>
-                              <p className="text-sm font-bold">{(val as number)?.toFixed(1) ?? '—'}</p>
+                      {e.overallBand ? (
+                        <div className="space-y-2">
+                          <div className="rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-200 dark:border-blue-900 p-3 flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex flex-col items-center justify-center shrink-0">
+                              <p className="text-[8px] uppercase tracking-wider text-blue-700 dark:text-blue-300 leading-none">
+                                Band
+                              </p>
+                              <p className="text-lg font-bold text-blue-700 dark:text-blue-300 leading-none mt-0.5">
+                                {e.overallBand.toFixed(1)}
+                              </p>
                             </div>
-                          ))}
+                            <div className="grid grid-cols-4 gap-1 flex-1">
+                              {[
+                                ['TA', e.taskAchievement],
+                                ['CC', e.coherence],
+                                ['LR', e.lexical],
+                                ['GRA', e.grammar],
+                              ].map(([label, val]) => (
+                                <div key={label as string} className="text-center">
+                                  <p className="text-[9px] text-muted-foreground uppercase">{label}</p>
+                                  <p className="text-xs font-bold">
+                                    {(val as number)?.toFixed(1) ?? '—'}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-xl bg-secondary p-2.5 flex items-center gap-2">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />
+                          <p className="text-[11px] text-muted-foreground">
+                            AI is grading this essay — refresh in a moment.
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Summary + improvements (auto-feedback) */}
+                      {e.summary && (
+                        <div className="rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 p-2.5 space-y-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                            <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-300 uppercase tracking-wide">
+                              AI Examiner Summary
+                            </span>
+                          </div>
+                          <p className="text-[11px] leading-relaxed text-foreground/90">{e.summary}</p>
+                        </div>
+                      )}
+                      {e.improvements.length > 0 && (
+                        <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 p-2.5 space-y-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <Target className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                            <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">
+                              Key improvements
+                            </span>
+                          </div>
+                          <ul className="text-[11px] leading-relaxed text-foreground/90 space-y-1 pl-1">
+                            {e.improvements.slice(0, 5).map((imp, i) => (
+                              <li key={i}>· {imp}</li>
+                            ))}
+                          </ul>
                         </div>
                       )}
 

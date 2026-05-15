@@ -165,6 +165,27 @@ export default function HomePage() {
             <School className="w-3.5 h-3.5" />
             Teacher Dashboard
           </Link>
+        ) : user.classroom ? (
+          <Link
+            href="/my-class"
+            className="block rounded-2xl border border-indigo-200 dark:border-indigo-900 bg-indigo-500/10 p-3 hover:bg-indigo-500/15 transition-colors group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">
+                  My Class
+                </p>
+                <p className="text-sm font-semibold truncate">{user.classroom.name}</p>
+                <p className="text-[11px] text-muted-foreground truncate">
+                  Teacher: {user.classroom.teacherName} · {user.classroom.memberCount} students
+                </p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 group-active:translate-x-0.5 transition-transform" />
+            </div>
+          </Link>
         ) : (
           <div className="grid grid-cols-2 gap-2">
             <Link

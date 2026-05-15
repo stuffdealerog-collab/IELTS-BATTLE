@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/jwt'
 import { prisma } from '@/lib/prisma'
 import { detectAiWriting } from '@/lib/ai-detector'
+import { generateAutoFeedback } from '@/lib/auto-feedback'
 
 export async function GET() {
   const session = await getSession()
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
     },
   })
 
-  // Run AI detection in background (non-blocking)
+  // Run AI detection + auto-feedback in background (non-blocking, parallel)
   if (!isDraft && content.trim()) {
     detectAiWriting(content, wordCount ?? 0)
       .then((result) => {
@@ -51,9 +52,11 @@ export async function POST(req: Request) {
           },
         })
       })
-      .catch((err) => {
-        console.error(`[ai-detect] essay ${essay.id} failed:`, err)
-      })
+      .catch((err) => console.error(`[ai-detect] essay ${essay.id} failed:`, err))
+
+    generateAutoFeedback(essay.id).catch((err) =>
+      console.error(`[auto-feedback] essay ${essay.id} failed:`, err)
+    )
   }
 
   return NextResponse.json({ essayId: essay.id }, { status: 201 })

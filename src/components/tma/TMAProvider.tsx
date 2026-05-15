@@ -14,6 +14,15 @@ import {
 } from '@telegram-apps/sdk-react'
 import { toast } from 'sonner'
 
+interface ClassroomInfo {
+  id: string
+  name: string
+  code: string
+  teacherName: string
+  memberCount: number
+  joinedAt: string
+}
+
 interface AppUser {
   id: string
   telegramId: string
@@ -24,6 +33,7 @@ interface AppUser {
   wins: number
   losses: number
   role: string
+  classroom?: ClassroomInfo | null
 }
 
 interface TMAContextValue {

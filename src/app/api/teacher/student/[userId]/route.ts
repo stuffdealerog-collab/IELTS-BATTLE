@@ -58,28 +58,43 @@ export async function GET(
       rating: student.rating,
       wins: student.wins,
       losses: student.losses,
-      essays: student.essays.map((e) => ({
-        id: e.id,
-        topicTitle: e.topic.title,
-        topicType: e.topic.taskType,
-        wordCount: e.wordCount,
-        submittedAt: e.submittedAt,
-        overallBand: e.feedback?.overallBand ?? null,
-        taskAchievement: e.feedback?.taskAchievement ?? null,
-        coherence: e.feedback?.coherence ?? null,
-        lexical: e.feedback?.lexical ?? null,
-        grammar: e.feedback?.grammar ?? null,
-        aiScore: e.aiScore,
-        aiVerdict: e.aiVerdict,
-        aiFlags: e.aiFlags ? JSON.parse(e.aiFlags) : [],
-        content: e.content,
-        teacherNotes: e.teacherNotes.map((n) => ({
-          id: n.id,
-          note: n.note,
-          teacherName: n.teacher.firstName ?? n.teacher.username,
-          createdAt: n.createdAt,
-        })),
-      })),
+      essays: student.essays.map((e) => {
+        let summary: string | null = null
+        let improvements: string[] = []
+        if (e.feedback?.detailedFeedback) {
+          try {
+            const parsed = JSON.parse(e.feedback.detailedFeedback)
+            summary = parsed.summary ?? null
+            improvements = Array.isArray(parsed.improvements) ? parsed.improvements : []
+          } catch {
+            // ignore malformed
+          }
+        }
+        return {
+          id: e.id,
+          topicTitle: e.topic.title,
+          topicType: e.topic.taskType,
+          wordCount: e.wordCount,
+          submittedAt: e.submittedAt,
+          overallBand: e.feedback?.overallBand ?? null,
+          taskAchievement: e.feedback?.taskAchievement ?? null,
+          coherence: e.feedback?.coherence ?? null,
+          lexical: e.feedback?.lexical ?? null,
+          grammar: e.feedback?.grammar ?? null,
+          summary,
+          improvements,
+          aiScore: e.aiScore,
+          aiVerdict: e.aiVerdict,
+          aiFlags: e.aiFlags ? JSON.parse(e.aiFlags) : [],
+          content: e.content,
+          teacherNotes: e.teacherNotes.map((n) => ({
+            id: n.id,
+            note: n.note,
+            teacherName: n.teacher.firstName ?? n.teacher.username,
+            createdAt: n.createdAt,
+          })),
+        }
+      }),
       lessonProgress: student.lessonProgress.map((p) => ({
         lessonId: p.lessonId,
         lessonTitle: p.lesson.title,
