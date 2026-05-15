@@ -8,6 +8,14 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('Seeding database...')
 
+  // Clear dependent tables first to avoid FK violations
+  await prisma.teacherNote.deleteMany()
+  await prisma.feedback.deleteMany()
+  await prisma.battleParticipant.deleteMany()
+  await prisma.battle.deleteMany()
+  await prisma.essay.deleteMany()
+  await prisma.lessonProgress.deleteMany()
+
   // Topics
   await prisma.essayTopic.deleteMany()
   const allTopics = [...task1Topics, ...task2Topics]
